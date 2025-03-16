@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HTML实时预览编辑器</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+        }
+
+        body {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            background-color: #f2f2f7;
+            color: #333;
+            overflow: hidden;
+        }
+
+        header {
+            padding: 15px;
+            background-color: #2c2c2e;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+
+        h1 {
+            font-size: 18px;
+            font-weight: 500;
+        }
+
+        .toolbar {
+            padding: 8px 15px;
+            background-color: #3a3a3c;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        button {
+            background-color: #0071e3;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            padding: 6px 12px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        button:hover {
+            background-color: #0077ed;
+        }
+
+        .container {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        .editor-container, .preview-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .editor-header, .preview-header {
+            padding: 8px 15px;
+            background-color: #e9e9eb;
+            border-bottom: 1px solid #c7c7cc;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .editor-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        #html-editor {
+            flex: 1;
+            resize: none;
+            border: none;
+            padding: 15px;
+            font-family: Menlo, Monaco, 'Courier New', monospace;
+            font-size: 14px;
+            line-height: 1.5;
+            background-color: #ffffff;
+            color: #333;
+            outline: none;
+            tab-size: 2;
+        }
+
+        #preview-frame {
+            flex: 1;
+            border: none;
+            background-color: white;
+        }
+
+        .resizer {
+            width: 6px;
+            background-color: #c7c7cc;
+            cursor: col-resize;
+        }
+
+        .status-bar {
+            padding: 6px 15px;
+            background-color: #2c2c2e;
+            color: #f2f2f7;
+            font-size: 12px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .toggle-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .toggle {
+            position: relative;
+            display: inline-block;
+            width: 40px;
+            height: 20px;
+        }
+
+        .toggle input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 20px;
+        }
+
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 2px;
+            bottom: 2px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .toggle-slider {
+            background-color: #0071e3;
+        }
+
+        input:checked + .toggle-slider:before {
+            transform: translateX(20px);
+        }
+
+        @media (prefers-color-scheme: dark) {
+            body {
+                background-color: #1c1c1e;
+                color: #f2f2f7;
+            }
+
+            #html-editor {
+                background-color: #2c2c2e;
+                color: #f2f2f7;
+            }
+
+            .editor-header, .preview-header {
+                background-color: #3a3a3c;
+                border-bottom: 1px solid #48484a;
+                color: #f2f2f7;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>HTML实时预览编辑器</h1>
+        <div class="file-controls">
+            <button id="new-btn">新建</button>
+            <button id="open-btn">打开</button>
+            <button id="save-btn">保存</button>
+        </div>
+    </header>
+
+    <div class="toolbar">
+        <div class="toggle-container">
+            <span>实时预览</span>
+            <label class="toggle">
+                <input type="checkbox" id="live-toggle" checked>
+                <span class="toggle-slider"></span>
+            </label>
+        </div>
+        <button id="format-btn">格式化代码</button>
+        <button id="run-btn">运行</button>
+    </div>
+
+    <div class="container">
+        <div class="editor-container">
+            <div class="editor-header">编辑器</div>
+            <div class="editor-area">
+                <textarea id="html-editor" spellcheck="false"><!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>我的HTML文档</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        h1 {
+            color: #0071e3;
+        }
+    </style>
+</head>
+<body>
+    <h1>欢迎使用HTML实时预览编辑器</h1>
+    <p>这是一个示例HTML文档。您可以在左侧编辑代码，右侧会实时显示预览效果。</p>
+    <ul>
+        <li>支持HTML、CSS和JavaScript</li>
+        <li>实时预览</li>
+        <li>代码格式化</li>
+        <li>文件保存和打开</li>
+    </ul>
+</body>
+</html></textarea>
+            </div>
+        </div>
+
+        <div class="resizer" id="resizer"></div>
+
+        <div class="preview-container">
+            <div class="preview-header">预览</div>
+            <iframe id="preview-frame" sandbox="allow-scripts allow-same-origin"></iframe>
+        </div>
+    </div>
+
+    <div class="status-bar">
+        <span id="status">就绪</span>
+        <span id="cursor-position">行: 1, 列: 1</span>
+    </div>
+
+    <script>
+        // 获取DOM元素
+        const htmlEditor = document.getElementById('html-editor');
+        const previewFrame = document.getElementById('preview-frame');
+        const liveToggle = document.getElementById('live-toggle');
+        const runBtn = document.getElementById('run-btn');
+        const formatBtn = document.getElementById('format-btn');
+        const newBtn = document.getElementById('new-btn');
+        const openBtn = document.getElementById('open-btn');
+        const saveBtn = document.getElementById('save-btn');
+        const statusElement = document.getElementById('status');
+        const cursorPosition = document.getElementById('cursor-position');
+        const resizer = document.getElementById('resizer');
+
+        // 等待页面完全加载后再初始化预览
+        window.addEventListener('load', function() {
+            setTimeout(updatePreview, 100); // 添加短暂延迟
+        });
+
+        // 事件监听器
+        htmlEditor.addEventListener('input', () => {
+            if (liveToggle.checked) {
+                updatePreview();
+            }
+            updateStatus('已修改');
+        });
+
+        htmlEditor.addEventListener('keydown', function(e) {
+            // 支持Tab键缩进
+            if (e.key === 'Tab') {
+                e.preventDefault();
+                const start = this.selectionStart;
+                const end = this.selectionEnd;
+                this.value = this.value.substring(0, start) + '  ' + this.value.substring(end);
+                this.selectionStart = this.selectionEnd = start + 2;
+            }
+        });
+
+        // 监听编辑器光标位置
+        htmlEditor.addEventListener('click', updateCursorPosition);
+        htmlEditor.addEventListener('keyup', updateCursorPosition);
+
+        liveToggle.addEventListener('change', () => {
+            runBtn.disabled = liveToggle.checked;
+            if (liveToggle.checked) {
+                updatePreview();
+            }
+        });
+
+        runBtn.addEventListener('click', updatePreview);
+        
+        formatBtn.addEventListener('click', formatHTML);
+        
+        newBtn.addEventListener('click', () => {
+            if (confirm('确定要创建新文件吗？当前未保存的更改将丢失。')) {
+                htmlEditor.value = getDefaultTemplate();
+                updatePreview();
+                updateStatus('新文件已创建');
+            }
+        });
+        
+        openBtn.addEventListener('click', openFile);
+        saveBtn.addEventListener('click', saveFile);
+
+        // 分割器拖动逻辑
+        let isResizing = false;
+        let lastDownX = 0;
+
+        resizer.addEventListener('mousedown', (e) => {
+            isResizing = true;
+            lastDownX = e.clientX;
+            document.body.classList.add('resizing');
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (!isResizing) return;
+            
+            const container = document.querySelector('.container');
+            const editorContainer = document.querySelector('.editor-container');
+            const previewContainer = document.querySelector('.preview-container');
+            
+            const delta = e.clientX - lastDownX;
+            lastDownX = e.clientX;
+            
+            const editorWidth = editorContainer.getBoundingClientRect().width;
+            const previewWidth = previewContainer.getBoundingClientRect().width;
+            
+            const newEditorWidth = editorWidth + delta;
+            const newPreviewWidth = previewWidth - delta;
+            
+            if (newEditorWidth > 100 && newPreviewWidth > 100) {
+                const totalWidth = container.getBoundingClientRect().width - resizer.getBoundingClientRect().width;
+                const editorPercent = (newEditorWidth / totalWidth) * 100;
+                const previewPercent = 100 - editorPercent;
+                
+                editorContainer.style.flex = `0 0 ${editorPercent}%`;
+                previewContainer.style.flex = `0 0 ${previewPercent}%`;
+            }
+        });
+
+        document.addEventListener('mouseup', () => {
+            isResizing = false;
+            document.body.classList.remove('resizing');
+        });
+
+        // 功能函数
+        function updatePreview() {
+            try {
+                // 使用data URI方式更新预览，避免跨域问题
+                const htmlContent = htmlEditor.value;
+                const dataUri = 'data:text/html;charset=utf-8,' + encodeURIComponent(htmlContent);
+                previewFrame.src = dataUri;
+                
+                if (liveToggle && liveToggle.checked) {
+                    updateStatus('预览已更新');
+                }
+            } catch (error) {
+                console.error('预览更新错误:', error);
+                updateStatus('预览更新错误: ' + error.message);
+            }
+        }
+
+        function formatHTML() {
+            try {
+                // 使用简单的格式化规则，后续可以整合更复杂的格式化库
+                const formatted = formatHTMLCode(htmlEditor.value);
+                htmlEditor.value = formatted;
+                updatePreview();
+                updateStatus('代码已格式化');
+            } catch (error) {
+                updateStatus('格式化失败: ' + error.message);
+            }
+        }
+
+        function formatHTMLCode(html) {
+            // 简单的HTML格式化逻辑
+            // 注意：这是一个简化版，实际产品可能需要使用库如js-beautify等
+            let formatted = '';
+            let indent = 0;
+            const indentSize = 2;
+            const lines = html.split(/>\s*</);
+            
+            for (let i = 0; i < lines.length; i++) {
+                let line = lines[i];
+                
+                if (line.match(/^\/\w/)) {
+                    // 如果是闭合标签，减少缩进
+                    indent -= indentSize;
+                }
+                
+                formatted += (i === 0 ? '' : '\n' + ' '.repeat(indent)) + '<' + line + '>';
+                
+                if (line.match(/^<!\w/) || line.match(/^<\w[^>]*[^\/]>$/) && !line.match(/^<(img|br|hr|input)/)) {
+                    // 如果是开放标签但不是自闭合标签，增加缩进
+                    indent += indentSize;
+                }
+            }
+            
+            return formatted;
+        }
+
+        function updateStatus(message) {
+            statusElement.textContent = message;
+            setTimeout(() => {
+                statusElement.textContent = '就绪';
+            }, 2000);
+        }
+
+        function updateCursorPosition() {
+            const text = htmlEditor.value.substring(0, htmlEditor.selectionStart);
+            const lines = text.split('\n');
+            const currentLine = lines.length;
+            const currentColumn = lines[lines.length - 1].length + 1;
+            cursorPosition.textContent = `行: ${currentLine}, 列: ${currentColumn}`;
+        }
+
+        function getDefaultTemplate() {
+            return `<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>我的HTML文档</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        h1 {
+            color: #0071e3;
+        }
+    </style>
+</head>
+<body>
+    <h1>我的HTML文档</h1>
+    <p>在这里开始编辑您的HTML内容。</p>
+</body>
+</html>`;
+        }
+
+        // 文件操作
+        function saveFile() {
+            // 创建一个下载链接
+            const blob = new Blob([htmlEditor.value], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'index.html';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            updateStatus('文件已保存');
+        }
+
+        function openFile() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.html,.htm';
+            
+            input.onchange = e => {
+                const file = e.target.files[0];
+                if (!file) return;
+                
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    htmlEditor.value = e.target.result;
+                    updatePreview();
+                    updateStatus('文件已打开: ' + file.name);
+                };
+                reader.readAsText(file);
+            };
+            
+            input.click();
+        }
+
+        // 初始运行预览
+        runBtn.disabled = liveToggle.checked;
+    </script>
+</body>
+</html>
